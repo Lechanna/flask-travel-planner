@@ -1,115 +1,132 @@
-from flask import Flask, request, render_template
 import requests
 import os
-from dotenv import load_dotenv
 import urllib.parse
+from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
-app = Flask(__name__)
-
 # API keys and base URLs
 WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
 WEATHER_API_URL = "http://api.openweathermap.org/data/2.5/weather"
+geo_base_url = "http://api.openweathermap.org/geo/1.0/direct"
+
+# Use RESTAURANT_API_KEY for both restaurants and geocoding
+RESTAURANT_API_KEY = os.getenv('RESTAURANT_API_KEY')
 ATTRACTION_API_KEY = os.getenv('ATTRACTION_API_KEY')
 ATTRACTION_API_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-RESTAURANT_API_KEY = os.getenv('RESTAURANT_API_KEY')
 RESTAURANT_API_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+GEOCODING_API_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/weather', methods=['POST'])
-def get_weather():
-    city = request.form['city']
-    state = request.form['state']
-    country = request.form['country']
-    location = f"{city},{state},{country}"
-    params = {
-        'q': location,
+def get_weather(city, country):
+    geo_params = {
+        'q': f"{city},{country}",
         'appid': WEATHER_API_KEY,
-        'units': 'imperial'
+        'limit': '1'
     }
-    url = f"{WEATHER_API_URL}?{urllib.parse.urlencode(params)}"
-    response = requests.get(url)
-    data = response.json()
-    
-    if response.status_code == 200 and 'weather' in data:
-        weather_description = data['weather'][0]['description']
-        temperature = data['main']['temp']
-        weather_info = f"The weather in {city}, {state}, {country} is {weather_description} with a temperature of {temperature}°F."
-    else:
-        weather_info = "Error fetching weather data. Please check the city, state, and country names."
-    
-    return render_template('weather.html', weather_info=weather_info)
+    geo_url = f"{geo_base_url}?{urllib.parse.urlencode(geo_params)}"
 
-@app.route('/attractions', methods=['POST'])
-def get_attractions():
-    city = request.form['city']
-    state = request.form['state']
-    country = request.form['country']
-    location_name = f"{city},{state},{country}"
-    geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={location_name}&key={ATTRACTION_API_KEY}"
-    geocode_response = requests.get(geocode_url)
-    geocode_data = geocode_response.json()
+    # Make the API call to get latitude and longitude
+    geo_response = requests.get(geo_url)
+    geo_data = geo_response.json()
+
+    # Check if the response contains 'lat' and 'lon' data
+    if geo_response.status_code == 200 and len(geo_data) > 0:
+        lat = geo_data[0]['lat']
+        lon = geo_data[0]['lon']
     
-    if geocode_response.status_code == 200 and geocode_data['results']:
-        location = geocode_data['results'][0]['geometry']['location']
-        user_location = f"{location['lat']},{location['lng']}"
-        params = {
-            'location': user_location,
-            'radius': 5000,
-            'type': 'tourist_attraction',
-            'key': ATTRACTION_API_KEY
+     # Construct the full API URL to get current weather data
+        weather_params = {
+            'lat': lat,
+            'lon': lon,
+            'appid': WEATHER_API_KEY,
+            'units': 'imperial'
         }
-        url = f"{ATTRACTION_API_URL}?{urllib.parse.urlencode(params)}"
-        response = requests.get(url)
-        data = response.json()
-        
-        if response.status_code == 200 and 'results' in data:
-            attractions = [(place['name'], place.get('rating', 'No rating')) for place in data['results']]
-            attractions.sort(key=lambda x: float(x[1]) if x[1] != 'No rating' else 0, reverse=True)
-        else:
-            attractions = []
-    else:
-        attractions = []
+        weather_url = f"{WEATHER_API_URL}?{urllib.parse.urlencode(weather_params)}"
     
-    return render_template('attractions.html', attractions=attractions)
+        # Make the API call to get current weather data
+        weather_response = requests.get(weather_url)
+        weather_data = weather_response.json()
+    
+        # Check if the response contains weather data
+        if weather_response.status_code == 200:
+            print(f"Current weather in {city}, {country}:")
+            print(f"Temperature: {weather_data['main']['temp']}°F")
+            print(f"Weather: {weather_data['weather'][0]['description']}")
+        else:
+            print("Error fetching weather data.")
+    else:
+        print("Error fetching location data. Please check the city and country/state names.")
 
-@app.route('/restaurants', methods=['POST'])
-def get_restaurants():
-    city = request.form['city']
-    state = request.form['state']
-    country = request.form['country']
-    location_name = f"{city},{state},{country}"
-    geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={location_name}&key={RESTAURANT_API_KEY}"
+def get_local_attractions(location, radius=1000, type='tourist_attraction'):
+    params = {
+        'location': location,
+        'radius': radius,
+        'type': type,
+        'key': ATTRACTION_API_KEY  # Using the same key for geocoding and attractions
+    }
+    response = requests.get(ATTRACTION_API_URL, params=params)
+    if response.status_code == 200:
+        results = response.json().get('results', [])
+        attractions = [(place['name'], place.get('rating', 'No rating')) for place in results]
+        return attractions
+    else:
+        return []
+
+def get_restaurant_recommendations(location, radius=1500, type='restaurant'):
+    params = {
+        'location': location,
+        'radius': radius,
+        'type': type,
+        'key': RESTAURANT_API_KEY
+    }
+    response = requests.get(RESTAURANT_API_URL, params=params)
+    if response.status_code == 200:
+        results = response.json().get('results', [])
+        restaurants = [(place['name'], place.get('rating', 'No rating')) for place in results]
+        return restaurants
+    else:
+        return []
+
+def main():
+    city = input("Enter a City: ")
+    country = input("Enter the country or state of the city: ")
+
+    # Get weather information
+    get_weather(city, country)
+
+    # Geocode the location for attractions and restaurants
+    user_location_name = f"{city},{country}"
+    geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={user_location_name}&key={ATTRACTION_API_KEY}"
     geocode_response = requests.get(geocode_url)
-    geocode_data = geocode_response.json()
     
-    if geocode_response.status_code == 200 and geocode_data['results']:
-        location = geocode_data['results'][0]['geometry']['location']
-        user_location = f"{location['lat']},{location['lng']}"
-        params = {
-            'location': user_location,
-            'radius': 5000,
-            'type': 'restaurant',
-            'key': RESTAURANT_API_KEY
-        }
-        url = f"{RESTAURANT_API_URL}?{urllib.parse.urlencode(params)}"
-        response = requests.get(url)
-        data = response.json()
-        
-        if response.status_code == 200 and 'results' in data:
-            restaurants = [(place['name'], place.get('rating', 'No rating')) for place in data['results']]
-            restaurants.sort(key=lambda x: float(x[1]) if x[1] != 'No rating' else 0, reverse=True)
+    if geocode_response.status_code == 200:
+        geocode_results = geocode_response.json().get('results', [])
+        if geocode_results:
+            location = geocode_results[0]['geometry']['location']
+            user_location = f"{location['lat']},{location['lng']}"
         else:
-            restaurants = []
+            print("Location not found.")
+            print(f"Geocode API response: {geocode_response.json()}")
+            return
     else:
-        restaurants = []
-    
-    return render_template('restaurants.html', restaurants=restaurants)
+        print(f"Geocode API response: {geocode_response.json()}")
+        print("Error in geocoding the location.")
+        return
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    # Get local attractions and restaurant recommendations
+    attractions = get_local_attractions(user_location)
+    attractions.sort(key=lambda x: float(x[1]) if x[1] != 'No rating' else 0, reverse=True)
+    print("\nLocal Attractions:")
+    for name, rating in attractions:
+        print(f"{name} - Rating: {rating}")
+
+    restaurants = get_restaurant_recommendations(user_location)
+    restaurants.sort(key=lambda x: float(x[1]) if x[1] != 'No rating' else 0, reverse=True)
+    print("\nRestaurant Recommendations:")
+    for name, rating in restaurants:
+        print(f"{name} - Rating: {rating}")
+
+if __name__ == "__main__":
+    main()
+
