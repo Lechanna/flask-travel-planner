@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Itinerary</title>
+</head>
+<body>
+    <h1>Travel Itinerary</h1>
+    
+    <h2>Weather Information</h2>
+    <p>{{ weather_info }}</p>
+
+    <h2>Local Attractions</h2>
+    <ul>
+        {% for name, rating in attractions %}
+        <li>{{ name }} - Rating: {{ rating }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Restaurant Recommendations</h2>
+    <ul>
+        {% for name, rating in restaurants %}
+        <li>{{ name }} - Rating: {{ rating }}</li>
+        {% endfor %}
+    </ul>
+
+    <a href="/">Back</a>
+</body>
+</html>
