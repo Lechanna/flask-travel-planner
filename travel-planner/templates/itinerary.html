@@ -4,27 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Travel Itinerary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+        header {
+            background: #333;
+            color: #fff;
+            padding-top: 30px;
+            min-height: 70px;
+            border-bottom: #77aaff 3px solid;
+        }
+        header h1 {
+            text-align: center;
+            text-transform: uppercase;
+            margin: 0;
+        }
+        section {
+            background: #fff;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        section h2 {
+            border-bottom: 2px solid #77aaff;
+            padding-bottom: 10px;
+        }
+        section ul {
+            list-style: none;
+            padding: 0;
+        }
+        section ul li {
+            background: #f4f4f4;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        a {
+            display: block;
+            width: 100px;
+            margin: 20px auto;
+            padding: 10px;
+            background: #333;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        a:hover {
+            background: #555;
+        }
+    </style>
 </head>
 <body>
-    <h1>Travel Itinerary</h1>
-    
-    <h2>Weather Information</h2>
-    <p>{{ weather_info }}</p>
-
-    <h2>Local Attractions</h2>
-    <ul>
-        {% for name, rating in attractions %}
-        <li>{{ name }} - Rating: {{ rating }}</li>
-        {% endfor %}
-    </ul>
-
-    <h2>Restaurant Recommendations</h2>
-    <ul>
-        {% for name, rating in restaurants %}
-        <li>{{ name }} - Rating: {{ rating }}</li>
-        {% endfor %}
-    </ul>
-
-    <a href="/">Back</a>
+    <header>
+        <div class="container">
+            <h1>Travel Itinerary</h1>
+        </div>
+    </header>
+    <div class="container">
+        <section>
+            <h2>Weather Information</h2>
+            <p>{{ weather_info }}</p>
+        </section>
+        <section>
+            <h2>Local Attractions</h2>
+            <ul>
+                {% for name, rating in attractions %}
+                <li>{{ name }} - Rating: {{ rating }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+        <section>
+            <h2>Restaurant Recommendations</h2>
+            <ul>
+                {% for name, rating in restaurants %}
+                <li>{{ name }} - Rating: {{ rating }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+        <a href="/">Back</a>
+    </div>
 </body>
 </html>

@@ -12,6 +12,7 @@ app = Flask(__name__)
 # API keys and base URLs
 WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
 WEATHER_API_URL = "http://api.openweathermap.org/data/2.5/weather"
+GEOCODING_API_URL = "http://api.openweathermap.org/geo/1.0/direct"
 ATTRACTION_API_KEY = os.getenv('ATTRACTION_API_KEY')
 ATTRACTION_API_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
 RESTAURANT_API_KEY = os.getenv('RESTAURANT_API_KEY')
@@ -36,18 +37,18 @@ def get_weather(location):
     params = {
         'q': location,
         'appid': WEATHER_API_KEY,
-        'units': 'imperial'
+        'units': 'imperial'  # Use 'imperial' for Fahrenheit
     }
     url = f"{WEATHER_API_URL}?{urllib.parse.urlencode(params)}"
     response = requests.get(url)
     data = response.json()
-    
-    if response.status_code == 200 and 'weather' in data:
-        weather_description = data['weather'][0]['description']
+
+    if response.status_code == 200:
+        weather = data['weather'][0]['description'].capitalize()
         temperature = data['main']['temp']
-        return f"The weather in {location} is {weather_description} with a temperature of {temperature}°F."
+        return f"Weather: {weather}, Temperature: {temperature}°F"
     else:
-        return "Error fetching weather data. Please check the location name."
+        return "Weather information not available"
 
 def get_attractions(location):
     geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={ATTRACTION_API_KEY}"
