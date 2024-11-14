@@ -34,21 +34,37 @@ def get_results():
     return render_template('itinerary.html', weather_info=weather_info, attractions=attractions, restaurants=restaurants)
 
 def get_weather(location):
-    params = {
+    geo_params = {
         'q': location,
         'appid': WEATHER_API_KEY,
-        'units': 'imperial'  # Use 'imperial' for Fahrenheit
+        'limit': '1'
     }
-    url = f"{WEATHER_API_URL}?{urllib.parse.urlencode(params)}"
-    response = requests.get(url)
-    data = response.json()
+    geo_url = f"{GEOCODING_API_URL}?{urllib.parse.urlencode(geo_params)}"
 
-    if response.status_code == 200:
-        weather = data['weather'][0]['description'].capitalize()
-        temperature = data['main']['temp']
-        return f"Weather: {weather}, Temperature: {temperature}°F"
+    geo_response = requests.get(geo_url)
+    geo_data = geo_response.json()
+
+    if geo_response.status_code == 200 and len(geo_data) > 0:
+        lat = geo_data[0]['lat']
+        lon = geo_data[0]['lon']
+    
+        weather_params = {
+            'lat': lat,
+            'lon': lon,
+            'appid': WEATHER_API_KEY,
+            'units': 'imperial'
+        }
+        weather_url = f"{WEATHER_API_URL}?{urllib.parse.urlencode(weather_params)}"
+    
+        weather_response = requests.get(weather_url)
+        weather_data = weather_response.json()
+    
+        if weather_response.status_code == 200:
+            return f"Current weather in {location} is {weather_data['main']['temp']}°F with {weather_data['weather'][0]['description']}"
+        else:
+            return "Error fetching weather data."
     else:
-        return "Weather information not available"
+        return "Error fetching location data. Please check the city and country/state names."
 
 def get_attractions(location):
     geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={ATTRACTION_API_KEY}"
