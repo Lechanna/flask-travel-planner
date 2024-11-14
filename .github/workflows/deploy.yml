@@ -1,0 +1,37 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # Trigger deploy on push to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+
+    - name: Add EC2 Host to Known Hosts
+      run: |
+        mkdir -p ~/.ssh
+        touch ~/.ssh/known_hosts
+        # Add the EC2 public IP to known_hosts
+        ssh-keyscan -H 3.138.154.25 >> ~/.ssh/known_hosts
+        # Verify the content of the known_hosts file
+        cat ~/.ssh/known_hosts
+
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ec2-user@3.138.154.25 << 'EOF'
+          docker pull cookielover202/flask-app:latest
+          docker stop thirsty_feistel || true
+          docker rm thirsty_feistel || true
+          docker run -d -p 5000:5000 --name thirsty_feistel cookielover202/flask-app:latest
+        EOF
