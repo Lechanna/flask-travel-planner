@@ -26,6 +26,7 @@ def home():
 def get_results():
     city = request.form['city']
     state = request.form['state']
+    print(f"Received city: {city}, state: {state}")  # Debugging line to check form values
     location = f"{city},{state}"
     weather_info = get_weather(location)
     attractions = get_attractions(location)
