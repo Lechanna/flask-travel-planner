@@ -23,7 +23,7 @@ jobs:
     
       # Build the Docker image
       - name: Build Docker image
-        run: docker build -t cookielover202/flask-app:latest .
+        run: docker build -t cookielover202/flask-app:latest ./travel-planner
 
       # Push the Docker image to Docker Hub
       - name: Push Docker image
