@@ -1,33 +1,33 @@
-name: Deploy Flask App to EC2
+name: Deploy to EC2
 
 on:
   push:
     branches:
-      - main
+      - main  # Trigger deploy on push to main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up SSH for deployment
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
-      - name: Connect to EC2 and Deploy
-        run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-            # Stop the running container
-            docker stop thirsty_feistel || true
-            docker rm thirsty_feistel || true
+    - name: Add EC2 Host to Known Hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H <EC2_PUBLIC_IP> >> ~/.ssh/known_hosts
 
-            # Pull the latest image
-            docker pull cookielover202/flask-app:latest
-
-            # Run the container
-            docker run -d -p 5000:5000 --name thirsty_feistel cookielover202/flask-app:latest
-          EOF
-
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ec2-user@<EC2_PUBLIC_IP> << 'EOF'
+          docker pull cookielover202/flask-app:latest
+          docker stop thirsty_feistel || true
+          docker rm thirsty_feistel || true
+          docker run -d -p 5000:5000 --name thirsty_feistel cookielover202/flask-app:latest
+        EOF
