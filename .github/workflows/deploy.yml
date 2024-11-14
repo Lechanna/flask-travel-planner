@@ -21,8 +21,9 @@ jobs:
     - name: Add EC2 Host to Known Hosts
       run: |
         mkdir -p ~/.ssh
-        ssh-keyscan -H <EC2_PUBLIC_IP> | tee -a ~/.ssh/known_hosts
-        # Check if the file was created and verify its contents
+        # Directly append the key to the known_hosts file
+        ssh-keyscan -H <EC2_PUBLIC_IP> >> ~/.ssh/known_hosts
+        # Verify the content of the known_hosts file
         cat ~/.ssh/known_hosts
 
     - name: Deploy to EC2
